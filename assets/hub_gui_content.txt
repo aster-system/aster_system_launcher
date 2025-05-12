@@ -1,0 +1,93 @@
+//***************************************************
+//
+//   HUB
+//
+//***************************************************
+
+<gui_object name="hub_page" type="text">
+	<border bottom=1 left=1 right=1 top=1>
+	<height value=1 type=scale>
+	<width value=1 type=scale>
+	<x attach=right>
+	<y attach=top>
+</gui_object>
+<gui_object name="hub_title" type="text">
+    <content font_size=80 alignment_horizontal=center>PLEOS</content>
+	<height value=80 type=pixel>
+    <parent name="hub_page">
+	<width value=1 type=scale>
+	<x value=1/2 type=object_scale>
+	<y attach=top>
+</gui_object>
+
+//***************************************************
+// Home
+//***************************************************
+
+// Home page
+<gui_object name="hub_home_page" type="text" sub_page visible>
+	<border bottom=1 left=1 right=1 top=1>
+	<height value=13/16 type=scale>
+	<parent name="hub_page">
+	<width value=7/8 type=scale>
+	<x attach=right>
+	<y attach=bottom>
+</gui_object>
+
+// Softwares
+<gui_object name="hub_software" type="text">
+	<border bottom=1 left=1 right=1 top=1>
+	<height value=1/3 type=scale>
+    <parent name="hub_home_page">
+	<width value=2/3 type=scale>
+	<x attach=right>
+	<y attach=top>
+</gui_object>
+<gui_object name="hub_software_title" type="text">
+    <content font_size=40 alignment_horizontal=center>Logiciels installés</content>
+	<height value=40 type=pixel>
+    <parent name="hub_software">
+	<width value=1 type=scale>
+	<x value=1/2 type=object_scale>
+	<y attach=top>
+</gui_object>
+<gui_object name="hub_shop" type="text">
+    <border bottom=1 left=1 right=1 top=1>
+    <content font_size=40 alignment_horizontal=center>Tous les logiciels</content>
+	<height value=40 type=pixel>
+    <parent name="hub_home_page">
+	<width value=2/3 type=scale>
+	<x attach=right>
+	<y attach=bottom attached_object="hub_software" offset=10>
+
+    <when event=overflighted>
+        <cursor type="pointing_hand_cursor">
+    </when>
+</gui_object>
+
+//***************************************************
+// Software
+//***************************************************
+
+// Software page
+<gui_object name="hub_software_page" type="text" sub_page>
+	<border bottom=1 left=1 right=1 top=1>
+	<height value=13/16 type=scale>
+	<parent name="hub_page">
+	<width value=7/8 type=scale>
+	<x attach=right>
+	<y attach=bottom>
+</gui_object>
+
+// Softwares list
+<gui_object name="hub_software_list" type="scroller_choice">
+	<border bottom=1 left=1 right=1 top=1>
+	<height value=1 type=scale>
+	<parent name="hub_software_page">
+	<width value=1 type=scale>
+	<x attach=right>
+	<y attach=bottom>
+
+	<sub_choice name="installed" displayer="Logiciels installés"></sub_choice>
+	<sub_choice name="availabled" displayer="Logiciels disponibles"></sub_choice>
+</gui_object>

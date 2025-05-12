@@ -1,0 +1,4 @@
+// Load the needed pages
+<page_2d name="hub" type="gui" displayed>
+	<content src="hub_gui_content.txt" sub_paged></content>
+</page_2d>
