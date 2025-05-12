@@ -59,12 +59,20 @@ namespace as_launcher {
     // Path to the datas of the software
     std::string Hub_Page::datas_path(){std::string current_path = scls::current_user_home_directory() + std::string("/AppData/Local/AsterSystem/");if(!std::filesystem::exists(current_path)){std::filesystem::create_directory(current_path);}current_path += std::string("Launcher/");if(!std::filesystem::exists(current_path)){std::filesystem::create_directory(current_path);}return current_path;}
 
+    // Deletes the result of the installer
+    void Hub_Page::installer_result_delete() {
+        std::string needed_path = std::string("./installer/bin/Release/result.txt");
+        if(!std::filesystem::exists(needed_path)){needed_path = std::string("./installer/result.txt");}
+        if(std::filesystem::exists(needed_path)){std::filesystem::remove(std::string(needed_path));}
+    }
+
     // Installs a software
     bool installation_launched = false;int installation_software_id = 0;
     void Hub_Page::install_software(int id) {
-        installation_launched = true;installation_software_id = id;
+        installation_launched = true;installer_result_delete();installation_software_id = id;
         std::string software_name = std::string("\"software_\"") + std::to_string(id) + std::string(".zip\"");
-        ShellExecute(NULL, "runas", "installer.exe", (std::string("\"") + scls::program_directory() + std::string("Aster_System\\\\\" ") + software_name).c_str(), "./installer/bin/Release/", SW_SHOWNORMAL);
+        if(std::filesystem::exists(std::string("./installer/installer.exe"))){ShellExecute(NULL, "runas", "installer.exe", (std::string("\"0\" \"") + scls::program_directory() + std::string("Aster_System\\\\\" ") + software_name).c_str(), "./installer/", SW_SHOWNORMAL);}
+        else{ShellExecute(NULL, "runas", "installer.exe", (std::string("\"0\" \"") + scls::program_directory() + std::string("Aster_System\\\\\" ") + software_name).c_str(), "./installer/bin/Release/", SW_SHOWNORMAL);}
     }
 
     // Returns a software in std::string
@@ -74,7 +82,11 @@ namespace as_launcher {
         to_return += std::string("\" name=\"") + name;
         to_return += std::string("\" installed=\"") + installed_string;
         to_return += std::string("\" installation_path=\"") + installation_path;
-        to_return += std::string("\" execution_path=\"") + execution_path + std::string("\">");
+        to_return += std::string("\" execution_path=\"") + execution_path;
+        to_return += std::string("\" major_version=\"") + std::to_string(major_version);
+        to_return += std::string("\" minor_version=\"") + std::to_string(minor_version);
+        to_return += std::string("\" newest_major_version=\"") + std::to_string(newest_major_version);
+        to_return += std::string("\" newest_minor_version=\"") + std::to_string(newest_minor_version) + std::string("\">");
         return to_return;
     }
 
@@ -89,16 +101,21 @@ namespace as_launcher {
     bool __network_loaded = false;bool __network_validation = false;
     bool request_launched = false;
     void Hub_Page::load_softwares() {
+        softwares().clear();
+        __load_softwares_available_memory();
         if(!__network_loaded && !request_launched) {
             request_launched = true;
             int result = scls::send_request_asynchronous(__server_ip, __server_port, std::string("software"), &__network_response, &__network_validation, &__network_thread);
-            __load_softwares_available_memory();
         }
 
         // Create the needed graphic elements
         software_list_availabled()->reset();software_list_installed()->reset();
         for(int i = 0;i<static_cast<int>(softwares().size());i++) {
-            if(softwares().at(i).installed) {software_list_installed()->add_object(std::string("launch-") + std::to_string(softwares().at(i).id), softwares().at(i).name);}
+            if(softwares().at(i).installed) {
+                std::shared_ptr<scls::GUI_Scroller_Choice> section = *software_list_installed()->add_sub_section(std::string("software_list_child_") + std::to_string(__gen), softwares().at(i).name);
+                section.get()->add_object(std::string("launch-") + std::to_string(softwares().at(i).id), std::string("Lancer"));
+                section.get()->add_object(std::string("uninstall-") + std::to_string(softwares().at(i).id), std::string("Supprimer"));
+            }
             else{
                 std::shared_ptr<scls::GUI_Scroller_Choice> section = *software_list_availabled()->add_sub_section(std::string("software_list_child_") + std::to_string(__gen), softwares().at(i).name);
                 section.get()->add_object(std::string("install-") + std::to_string(softwares().at(i).id), std::string("Installer"));
@@ -120,10 +137,12 @@ namespace as_launcher {
             else if(attributes.at(i).name == std::string("major_version")){software.major_version = std::stoi(attributes.at(i).value);}
             else if(attributes.at(i).name == std::string("minor_version")){software.minor_version = std::stoi(attributes.at(i).value);}
             else if(attributes.at(i).name == std::string("name")){software.name = attributes.at(i).value;}
+            else if(attributes.at(i).name == std::string("newest_major_version")){software.newest_major_version = std::stoi(attributes.at(i).value);}
+            else if(attributes.at(i).name == std::string("newest_minor_version")){software.newest_minor_version = std::stoi(attributes.at(i).value);}
         }
 
         // Check installation
-        if(software.id != 0 && software.installed){software.installed = !software.installation_path.empty() && std::filesystem::exists(software.installation_path) && !software.execution_path.empty() && std::filesystem::exists(software.installation_path + software.execution_path);}
+        if(software.id != 0){software.installed = !software.installation_path.empty() && std::filesystem::exists(software.installation_path) && !software.execution_path.empty() && std::filesystem::exists(software.installation_path + software.execution_path);}
     }
     void __load_software_objects(std::vector<Hub_Page::Availabled_Software>& softwares, std::string content) {
         std::shared_ptr<scls::__Balise_Container> needed_balises = std::make_shared<scls::__Balise_Container>();
@@ -149,7 +168,14 @@ namespace as_launcher {
         for(int i = 0;i<static_cast<int>(current_softwares.size());i++) {
             for(int j = 0;j<static_cast<int>(network_response.size());j++) {
                 if(current_softwares.at(i).id == network_response.at(j).id) {
+                    // Create the software
                     Hub_Page::Availabled_Software to_add = current_softwares.at(i);
+
+                    // Handle version
+                    to_add.newest_major_version = network_response.at(j).major_version;
+                    to_add.newest_minor_version = network_response.at(j).minor_version;
+
+                    // Add the software
                     softwares().push_back(to_add);
 
                     // Finish the handling
@@ -194,6 +220,16 @@ namespace as_launcher {
         if(!std::filesystem::exists(memory_path)){std::filesystem::create_directory(memory_path);}
         memory_path += std::string("softwares.txt");
         scls::write_in_file(memory_path, content);
+    }
+    // Uninstalls a software
+    void Hub_Page::uninstall_software(int id) {
+        installer_result_delete();
+        Availabled_Software* needed_software = software_by_id(id);
+        std::string software_name = std::string("\"software_\"") + std::to_string(id) + std::string(".zip\"");
+        if(std::filesystem::exists(std::string("./installer/installer.exe"))){ShellExecute(NULL, "runas", "installer.exe", (std::string("\"1\" \"") + needed_software->installation_path + std::string("\\\" ") + software_name).c_str(), "./installer/", SW_SHOWNORMAL);}
+        else{ShellExecute(NULL, "runas", "installer.exe", (std::string("\"1\" \"") + needed_software->installation_path + std::string("\\\" ") + software_name).c_str(), "./installer/bin/Release/", SW_SHOWNORMAL);}
+        needed_software->execution_path = std::string("");needed_software->installation_path = std::string("");needed_software->installed = false;
+        load_softwares();
     }
 
     // Hub_Page destructor
@@ -240,6 +276,7 @@ namespace as_launcher {
             // Parse the operation
             std::vector<std::string> cutted = scls::cut_string(operation, std::string("-"));
             if(cutted.at(0) == std::string("launch")) {launch_software(std::stoi(cutted.at(1)));}
+            else if(cutted.at(0) == std::string("uninstall")) {uninstall_software(std::stoi(cutted.at(1)));}
         }
     }
 
@@ -264,13 +301,17 @@ namespace as_launcher {
 
         // Check an installation
         if(installation_launched) {
-            if(std::filesystem::exists("./installer/bin/Release/result.txt")) {
+            std::string needed_path = std::string("./installer/bin/Release/result.txt");
+            if(!std::filesystem::exists(needed_path)){needed_path = std::string("./installer/result.txt");}
+            if(std::filesystem::exists(needed_path)) {
                 // Get the datas
-                std::shared_ptr<scls::XML_Text> content = scls::xml(window_struct()->balises_shared_ptr(), scls::read_file("./installer/bin/Release/result.txt"));
+                std::shared_ptr<scls::XML_Text> content = scls::xml(window_struct()->balises_shared_ptr(), scls::read_file(needed_path));
                 scls::XML_Text* error = content.get()->balise_by_name("error");scls::XML_Text* software = content.get()->balise_by_name("software");
                 if(software != 0) {
                     // Successfull installation
                     std::string execution_path = std::string();std::string installation_path = std::string();
+                    int major_version = software_by_id(installation_software_id)->newest_major_version;
+                    int minor_version = software_by_id(installation_software_id)->newest_minor_version;
                     for(int i = 0;i<static_cast<int>(software->xml_attributes().size());i++){
                         if(software->xml_attributes().at(i).name == std::string("execution_path")){execution_path = software->xml_attributes().at(i).value;}
                         else if(software->xml_attributes().at(i).name == std::string("installation_path")){installation_path = software->xml_attributes().at(i).value;}
@@ -280,11 +321,13 @@ namespace as_launcher {
                     software_by_id(installation_software_id)->execution_path = execution_path;
                     software_by_id(installation_software_id)->installation_path = installation_path;
                     software_by_id(installation_software_id)->installed = true;
+                    software_by_id(installation_software_id)->major_version = major_version;
+                    software_by_id(installation_software_id)->minor_version = minor_version;
                     save_softwares();
                     load_softwares();
                 }
                 else if(error != 0) {scls::print("Aster System Launcher", "Can't install the software.");}
-                std::filesystem::remove(std::string("./installer/bin/Release/result.txt"));
+                installer_result_delete();
                 installation_launched = false;
             }
         }

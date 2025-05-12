@@ -59,6 +59,8 @@ namespace as_launcher {
             bool installed = false;
             // Versions of the software
             int major_version = 0;int minor_version = 0;
+            // Newest versions of the software
+            int newest_major_version = 0;int newest_minor_version = 0;
             // Name of the software
             std::string name = std::string();
 
@@ -75,6 +77,8 @@ namespace as_launcher {
 
         // Path to the datas of the software
         std::string datas_path();
+        // Deletes the result of the installer
+        void installer_result_delete();
 
         // Installs a software
         void install_software(int id);
@@ -87,6 +91,8 @@ namespace as_launcher {
         void __load_softwares_available_memory();
         // Saves the softwares in the memory
         void save_softwares();
+        // Uninstalls a software
+        void uninstall_software(int id);
 
         // Returns / resets the current page
         inline unsigned short current_page() const {return a_current_state.current_page;};
